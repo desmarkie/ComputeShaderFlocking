@@ -1,0 +1,44 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct Node {
+
+    float3 pos;
+    float3 vel;
+    float scale;
+    float angle;
+    float inc;
+
+};
+
+RWStructuredBuffer<Node> dataBuffer;
+
+[numthreads(8,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    float3 newPos = float3(dataBuffer[id.x].pos + dataBuffer[id.x].vel);
+
+    if( newPos.x < -10 ) newPos.x += 20;
+    else if( newPos.x > 10 ) newPos.x -= 20;
+
+    if( newPos.y < -10 ) newPos.y += 20;
+    else if( newPos.y > 10 ) newPos.y -= 20;
+
+    if( newPos.z < -10 ) newPos.z += 20;
+    else if( newPos.z > 10 ) newPos.z -= 20;
+
+    dataBuffer[id.x].pos = newPos;
+
+    float angle = dataBuffer[id.x].angle + dataBuffer[id.x].inc;
+    if(angle >= 360) angle -= 360;
+    dataBuffer[id.x].angle = angle;
+
+    float newScale = float( sin(angle * (3.14/180)) * 2 );
+    if(newScale < 0.1) newScale = 0.1;
+    dataBuffer[id.x].scale = newScale;
+
+
+	
+    
+}
