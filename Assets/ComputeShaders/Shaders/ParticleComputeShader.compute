@@ -8,37 +8,97 @@ struct Node {
     float scale;
     float angle;
     float inc;
+    float maxSpeed;
+    float maxTurnSpeed;
+    float3 targetPosition;
+    float3 avoidPosition;
+    float mass;
 
 };
 
 RWStructuredBuffer<Node> dataBuffer;
 
-[numthreads(8,1,1)]
+
+// steer toward a target in 3d space
+float3 SeekTarget ( float3 boidPosition, float3 boidVelocity, float3 targetPosition, float maxSpeed, float maxTurnSpeed )
+{
+
+    float3 desiredVelocity = targetPosition - boidPosition;
+
+    desiredVelocity = normalize(desiredVelocity) * maxSpeed;
+
+    float3 turningForce = desiredVelocity - boidVelocity;
+    if(length(turningForce) > maxTurnSpeed)
+    {
+        turningForce = normalize(turningForce) * maxTurnSpeed;
+    }
+
+    return turningForce;
+
+}
+
+float3 AvoidTarget ( float3 boidPosition, float3 boidVelocity, float3 avoidPosition, float maxSpeed, float maxTurnSpeed )
+{
+
+    float3 desiredVelocity = boidPosition - avoidPosition;
+
+    desiredVelocity = normalize(desiredVelocity) * maxSpeed;
+
+    float3 turningForce = desiredVelocity - boidVelocity;
+    /*
+    if(length(turningForce) > maxTurnSpeed)
+    {
+        turningForce = normalize(turningForce) * maxTurnSpeed;
+    }
+    */
+
+    return turningForce;
+
+}
+
+[numthreads(96,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
 
-    float3 newPos = float3(dataBuffer[id.x].pos + dataBuffer[id.x].vel);
+    Node node = dataBuffer[id.x];
 
-    if( newPos.x < -10 ) newPos.x += 20;
-    else if( newPos.x > 10 ) newPos.x -= 20;
+    float3 accel = float3(0.0,0.0,0.0);
 
-    if( newPos.y < -10 ) newPos.y += 20;
-    else if( newPos.y > 10 ) newPos.y -= 20;
+    if (length(node.avoidPosition-node.pos) > 4)
+    {
+        accel += SeekTarget( node.pos, node.vel, node.targetPosition, node.maxSpeed, node.maxTurnSpeed );
+    }
+    else
+    {
+        accel += AvoidTarget( node.pos, node.vel, node.avoidPosition, node.maxSpeed, node.maxTurnSpeed );
+    }
 
-    if( newPos.z < -10 ) newPos.z += 20;
-    else if( newPos.z > 10 ) newPos.z -= 20;
+    node.vel = node.vel + ( accel / node.mass);
 
-    dataBuffer[id.x].pos = newPos;
+    if(length(node.vel) > node.maxSpeed)
+    {
+        node.vel = normalize(node.vel) * node.maxSpeed;
+    }
 
+
+    //update position and keep within bounds
+    //float3 newPos = node.pos + node.vel;
+
+    //node.pos = newPos;
+
+    node.pos += node.vel;
+
+    dataBuffer[id.x] = node;
+
+    //scaling
+    /*
+    //update sin value
     float angle = dataBuffer[id.x].angle + dataBuffer[id.x].inc;
-    if(angle >= 360) angle -= 360;
-    dataBuffer[id.x].angle = angle;
+    dataBuffer[id.x].angle = fmod(angle, 360);
 
-    float newScale = float( sin(angle * (3.14/180)) * 2 );
-    if(newScale < 0.1) newScale = 0.1;
-    dataBuffer[id.x].scale = newScale;
+    //update scale value
+    float newScale = sin(radians(angle)) * 2;
+    dataBuffer[id.x].scale = clamp(newScale, 0.1, 2);
+    */
 
-
-	
-    
 }

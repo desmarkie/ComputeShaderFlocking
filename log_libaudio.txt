@@ -1,0 +1,4 @@
+[LOG]: LibAudioCaptureAPI() - Sample rate: 44100
+[LOG]: LibAudioCaptureAPI() - File path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/Video/2017-07-28-23-09-11-7RVAK.wav
+[LOG]: LibAudioCaptureAPI() - FFmpeg path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/FFmpeg/OSX/ffmpeg
+[LOG]: Close() - Success: Ture
