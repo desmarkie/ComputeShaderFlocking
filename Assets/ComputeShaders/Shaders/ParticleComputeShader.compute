@@ -6,7 +6,6 @@ struct Node {
     float3 pos;
     float3 vel;
     float3 targetPosition;
-    float3 avoidPosition;
     float mass;
     float maxSpeed;
     float maxTurnSpeed;
@@ -14,21 +13,29 @@ struct Node {
 
 };
 
+struct Obstacle {
+
+    float3 pos;
+    float radius;
+
+};
+
 RWStructuredBuffer<Node> dataBuffer;
+RWStructuredBuffer<Obstacle> obstacleBuffer;
 
 
 // steer toward a target in 3d space
-float3 SeekTarget ( float3 boidPosition, float3 boidVelocity, float3 targetPosition, float maxSpeed, float maxTurnSpeed )
+float3 SeekTarget ( Node node, float3 targetPosition )
 {
 
-    float3 desiredVelocity = targetPosition - boidPosition;
+    float3 desiredVelocity = targetPosition - node.pos;
 
-    desiredVelocity = normalize(desiredVelocity) * maxSpeed;
+    desiredVelocity = normalize(desiredVelocity) * node.maxSpeed;
 
-    float3 turningForce = desiredVelocity - boidVelocity;
-    if(length(turningForce) > maxTurnSpeed)
+    float3 turningForce = desiredVelocity - node.vel;
+    if(length(turningForce) > node.maxTurnSpeed)
     {
-        turningForce = normalize(turningForce) * maxTurnSpeed;
+        turningForce = normalize(turningForce) * node.maxTurnSpeed;
     }
 
     return turningForce;
@@ -36,22 +43,32 @@ float3 SeekTarget ( float3 boidPosition, float3 boidVelocity, float3 targetPosit
 }
 
 // avoid a target in 3d space
-float3 AvoidTarget ( float3 boidPosition, float3 boidVelocity, float3 avoidPosition, float maxSpeed, float maxTurnSpeed )
+float3 AvoidTarget ( Node node, float3 targetPosition )
 {
 
-    float3 desiredVelocity = boidPosition - avoidPosition;
+    float3 desiredVelocity = node.pos - targetPosition;
 
-    desiredVelocity = normalize(desiredVelocity) * maxSpeed;
+    desiredVelocity = normalize(desiredVelocity) * node.maxSpeed;
 
-    float3 turningForce = desiredVelocity - boidVelocity;
-    /*
-    if(length(turningForce) > maxTurnSpeed)
+    float3 turningForce = desiredVelocity - node.vel;
+    if(length(turningForce) > node.maxTurnSpeed)
     {
-        turningForce = normalize(turningForce) * maxTurnSpeed;
+        turningForce = normalize(turningForce) * node.maxTurnSpeed;
     }
-    */
+
 
     return turningForce;
+
+}
+
+float3 DistAvoidTarget( Node node, float3 targetPosition, float radius )
+{
+
+    float3 force = float3(0,0,0);
+
+    if( length(targetPosition - node.pos) < radius ) force += AvoidTarget(node, targetPosition);
+
+    return force;
 
 }
 
@@ -213,25 +230,22 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // create a new accel vector
     float3 accel = float3(0.0,0.0,0.0);
 
-    // basic seek / avoid
+    // seek target first
+    accel += SeekTarget( node, node.targetPosition );
 
-    /*
-    // if far enough away from the avoider, SeekTarget
-    if (length(node.avoidPosition-node.pos) > 4)
+    // avoid any obstacles
+    uint obsCount, obsStride;
+    obstacleBuffer.GetDimensions(obsCount, obsStride);
+    if(obsCount > 0)
     {
-        accel += SeekTarget( node.pos, node.vel, node.targetPosition, node.maxSpeed, node.maxTurnSpeed );
+        [loop]
+        for(int i = 0; i < obsCount; i++)
+        {
+            accel += DistAvoidTarget(node, obstacleBuffer[i].pos, obstacleBuffer[i].radius);
+        }
     }
-    else // else AvoidTarget
-    {
-        accel += AvoidTarget( node.pos, node.vel, node.avoidPosition, node.maxSpeed, node.maxTurnSpeed );
-    }
-    */
 
-    accel += SeekTarget( node.pos, node.vel, node.targetPosition, node.maxSpeed, node.maxTurnSpeed ) * 0.5;
-    if (length(node.avoidPosition-node.pos) < 4)
-    {
-        accel += AvoidTarget( node.pos, node.vel, node.avoidPosition, node.maxSpeed, node.maxTurnSpeed );
-    }
+    // add flocking behaviours
     accel += Flock( node, id );
 
     // add acceleration to velocity

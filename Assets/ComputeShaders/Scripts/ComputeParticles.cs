@@ -7,15 +7,15 @@ public class ComputeParticles : MonoBehaviour {
 	[Tooltip("Compute Shader")]
 	public ComputeShader shader;
 
-	[Tooltip("Number of Particles to create")]
+	[Tooltip("Number of Boids to create")]
 	[Range(1, 10000)]
 	public int count = 1;
 
-	[Tooltip("Maximum Speed for Particles")]
+	[Tooltip("Maximum Speed for Boid")]
 	[Range(0.01f, 10f)]
 	public float maxSpeed = 6.0f;
 
-	[Tooltip("Maximum Turning Speed for Particles")]
+	[Tooltip("Maximum Turning Speed for Boid")]
 	[Range(0.0001f, 10f)]
 	public float maxTurnSpeed = 6.0f;
 
@@ -28,28 +28,17 @@ public class ComputeParticles : MonoBehaviour {
 	[Tooltip("Boid prefab")]
 	public GameObject prefab;
 
-	[Tooltip("Boid Target")]
+	[Tooltip("Boid Seek Target")]
 	public GameObject targetObject;
 
-	[Tooltip("Boid Avoiders")]
-	public GameObject[] avoiders;
+	[Tooltip("Boid Avoid Obstacles")]
+	public SimpleTargetObject[] obstacles;
 
-	[Tooltip("Avoider Distance")]
-	public float avoiderLength;
-
-	[Tooltip("Avoider Rotation Speeds")]
-	public Vector3 avoiderSpeeds;
-
-
-
-	private Vector3 avoiderValues = Vector3.zero;
+	private Obstacle[] obstacleStructs;
 
 	private Node[] nodes;
 
 	private GameObject[] prefabGOs;
-
-	public Vector3 axisSpread;
-	public Vector3 axisSpeeds;
 
 	private Vector3 sinValues;
 
@@ -75,53 +64,70 @@ public class ComputeParticles : MonoBehaviour {
 
 		}
 
+		obstacleStructs = new Obstacle[obstacles.Length];
+		for (int i = 0; i < obstacleStructs.Length; i++)
+		{
+			
+			obstacleStructs[i] = new Obstacle();
+			obstacleStructs[i].position = obstacles[i].currentPosition;
+			obstacleStructs[i].radius = obstacles[i].radius * 1.5f;
+
+		}
+
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
-		sinValues.x += axisSpeeds.x;
-		sinValues.x %= 360;
-		sinValues.y += axisSpeeds.y;
-		sinValues.y %= 360;
-		sinValues.z += axisSpeeds.z;
-		sinValues.z %= 360;
+		//sinValues.x += axisSpeeds.x;
+		//sinValues.x %= 360;
+		//sinValues.y += axisSpeeds.y;
+		//sinValues.y %= 360;
+		//sinValues.z += axisSpeeds.z;
+		//sinValues.z %= 360;
 
-		targetObject.transform.localPosition = new Vector3(
-			Mathf.Sin(Mathf.Deg2Rad * sinValues.x) * axisSpread.x,
-			Mathf.Sin(Mathf.Deg2Rad * sinValues.y) * axisSpread.y,
-			Mathf.Sin(Mathf.Deg2Rad * sinValues.z) * axisSpread.z
-		);
+		//targetObject.transform.localPosition = new Vector3(
+		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.x) * axisSpread.x,
+		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.y) * axisSpread.y,
+		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.z) * axisSpread.z
+		//);
 
-		avoiderValues.x += avoiderSpeeds.x;
-		avoiderValues.x %= 360;
-		avoiderValues.y += avoiderSpeeds.y;
-		avoiderValues.y %= 360;
-		avoiderValues.z += avoiderSpeeds.z;
-		avoiderValues.z %= 360;
+		//avoiderValues.x += avoiderSpeeds.x;
+		//avoiderValues.x %= 360;
+		//avoiderValues.y += avoiderSpeeds.y;
+		//avoiderValues.y %= 360;
+		//avoiderValues.z += avoiderSpeeds.z;
+		//avoiderValues.z %= 360;
 
-		avoiders[0].transform.localPosition = new Vector3(
-			Mathf.Sin(Mathf.Deg2Rad * avoiderValues.x) * avoiderLength,
-			Mathf.Sin(Mathf.Deg2Rad * avoiderValues.y) * avoiderLength,
-			Mathf.Sin(Mathf.Deg2Rad * avoiderValues.z) * avoiderLength
-		);
+		//avoiders[0].transform.localPosition = new Vector3(
+		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.x) * avoiderLength,
+		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.y) * avoiderLength,
+		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.z) * avoiderLength
+		//);
 
+
+		for (int i = 0; i < obstacleStructs.Length; i++)
+		{
+			obstacleStructs[i].position = obstacles[i].currentPosition;
+		}
+
+		ComputeBuffer obsBuffer = new ComputeBuffer(obstacleStructs.Length, 16);
 
 		for (int i = 0; i < nodes.Length; i++)
 		{
 			nodes[i].targetPosition = targetObject.transform.localPosition;
-			nodes[i].avoidPosition = nodes[i].targetPosition + avoiders[0].transform.localPosition;
 		}
 
 		int kernelHandle = shader.FindKernel("CSMain");
 
-		ComputeBuffer buffer = new ComputeBuffer(count, 64);
+		ComputeBuffer buffer = new ComputeBuffer(count, 52);
 
 		buffer.SetData(nodes);
 
 		Node[] newPositions = new Node[count];
 
 		shader.SetBuffer(kernelHandle, "dataBuffer", buffer);
+		shader.SetBuffer(kernelHandle, "obstacleBuffer", obsBuffer);
 		shader.Dispatch(kernelHandle, count, 1, 1);
 		buffer.GetData(newPositions);
 		buffer.Release();
@@ -160,7 +166,6 @@ public class ComputeParticles : MonoBehaviour {
 		n.maxSpeed = maxSpeed;
 		n.maxTurnSpeed = maxTurnSpeed;
 		n.targetPosition = targetObject.transform.localPosition;
-		n.avoidPosition = avoiders[0].transform.localPosition;
 		n.mass = Random.Range(minBoidMass, maxBoidMass);
 		n.numberOfNodes = count;
 		return n;
@@ -175,10 +180,16 @@ struct Node {
 	public Vector3 position;
 	public Vector3 velocity;
 	public Vector3 targetPosition;
-	public Vector3 avoidPosition;
 	public float mass;
 	public float maxSpeed;
 	public float maxTurnSpeed;
 	public float numberOfNodes;
+
+}
+
+struct Obstacle {
+
+	public Vector3 position;
+	public float radius;
 
 }
