@@ -53,8 +53,13 @@ public class ComputeParticles : MonoBehaviour {
 
 	private Vector3 sinValues;
 
+	private string folder = "videocapture";
+
 
 	void Start () {
+
+		Time.captureFramerate = 60;
+		System.IO.Directory.CreateDirectory(folder);
 
 		nodes = new Node[count];
 		prefabGOs = new GameObject[count];
@@ -110,7 +115,7 @@ public class ComputeParticles : MonoBehaviour {
 
 		int kernelHandle = shader.FindKernel("CSMain");
 
-		ComputeBuffer buffer = new ComputeBuffer(count, 72);
+		ComputeBuffer buffer = new ComputeBuffer(count, 64);
 
 		buffer.SetData(nodes);
 
@@ -130,7 +135,11 @@ public class ComputeParticles : MonoBehaviour {
 			if(nodes[i].velocity != Vector3.zero) prefabGOs[i].transform.rotation = Quaternion.LookRotation(nodes[i].velocity);
 		}
 
+		// name is "realFolder/shot 0005.png"
+		string filename = string.Format("{0}/{1:D04} shot.png", folder, Time.frameCount);
 
+		// Capture the screenshot to the specified file.
+		//ScreenCapture.CaptureScreenshot(filename);
 	}
 
 	private GameObject GetNewPrefab()
@@ -153,6 +162,7 @@ public class ComputeParticles : MonoBehaviour {
 		n.targetPosition = targetObject.transform.localPosition;
 		n.avoidPosition = avoiders[0].transform.localPosition;
 		n.mass = Random.Range(minBoidMass, maxBoidMass);
+		n.numberOfNodes = count;
 		return n;
 
 	}
@@ -164,13 +174,11 @@ struct Node {
 	
 	public Vector3 position;
 	public Vector3 velocity;
-	public float scale;
-	public float angle;
-	public float increment;
-	public float maxSpeed;
-	public float maxTurnSpeed;
 	public Vector3 targetPosition;
 	public Vector3 avoidPosition;
 	public float mass;
+	public float maxSpeed;
+	public float maxTurnSpeed;
+	public float numberOfNodes;
 
 }

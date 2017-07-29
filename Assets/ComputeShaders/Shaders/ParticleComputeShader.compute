@@ -5,14 +5,12 @@ struct Node {
 
     float3 pos;
     float3 vel;
-    float scale;
-    float angle;
-    float inc;
-    float maxSpeed;
-    float maxTurnSpeed;
     float3 targetPosition;
     float3 avoidPosition;
     float mass;
+    float maxSpeed;
+    float maxTurnSpeed;
+    float numberOfNodes;
 
 };
 
@@ -37,6 +35,7 @@ float3 SeekTarget ( float3 boidPosition, float3 boidVelocity, float3 targetPosit
 
 }
 
+// avoid a target in 3d space
 float3 AvoidTarget ( float3 boidPosition, float3 boidVelocity, float3 avoidPosition, float maxSpeed, float maxTurnSpeed )
 {
 
@@ -56,49 +55,198 @@ float3 AvoidTarget ( float3 boidPosition, float3 boidVelocity, float3 avoidPosit
 
 }
 
+// steer toward a target and decelerate when within distance [_arriveDistance]
+float3 ArriveAtTarget ( Node node, float3 targetPosition )
+{
+    float3 desiredVelocity = targetPosition - node.pos;
+    float dist = 0.3;
+
+    if ( length(desiredVelocity) < dist )
+    {
+        desiredVelocity = normalize(desiredVelocity) * lerp( 0, node.maxSpeed, length(desiredVelocity) / 3 );
+    }
+    else
+    {
+        desiredVelocity = normalize(desiredVelocity) * node.maxSpeed;
+    }
+
+    if(length(desiredVelocity) > node.maxTurnSpeed)
+    {
+        desiredVelocity = normalize(desiredVelocity) * node.maxTurnSpeed;
+    }
+
+    return desiredVelocity;
+
+}
+
+// try to match neighbours' velocities within distance [app.alignment]
+float3 AlignToNeighbours ( Node node, uint3 id )
+{
+    float3 combinedVelocities = float3(0,0,0);
+    Node checkNode;
+    int ct = 0;
+    float dist = 0.6;
+
+    [loop]
+    for ( int i = 0; i < int(node.numberOfNodes); i++ )
+    {
+        if(i != id.x)
+        {
+            checkNode = dataBuffer[i];
+            if(length(node.pos - checkNode.pos) < dist)
+            {
+                combinedVelocities += checkNode.vel;
+                ct++;
+            }
+        }
+    }
+
+    if ( ct != 0 )
+    {
+        combinedVelocities = combinedVelocities / ct;
+        if(length(combinedVelocities) > node.maxSpeed)
+        {
+            combinedVelocities = normalize(combinedVelocities) * node.maxSpeed;
+        }
+        if(length(combinedVelocities) > node.maxTurnSpeed)
+        {
+            combinedVelocities = normalize(combinedVelocities) * node.maxTurnSpeed;
+        }
+
+    }
+
+    return combinedVelocities;
+}
+
+// try to find even spacing between neighbours within distance [app.cohesion]
+float3 CohereToNeighbours ( Node node, uint3 id )
+{
+    float3 combinedPositions = float3(0,0,0);
+    Node checkNode;
+    int ct = 0;
+    float dist = 0.3;
+
+    [loop]
+    for ( int i = 0; i < int(node.numberOfNodes); i++ )
+    {
+        if(i != id.x)
+        {
+            checkNode = dataBuffer[i];
+            if(length(node.pos - checkNode.pos) < dist)
+            {
+                combinedPositions += checkNode.pos;
+                ct++;
+            }
+        }
+    }
+
+    if ( ct != 0 )
+    {
+        //combinedPositions = SeekTarget( combinedPositions / ct );
+        combinedPositions = ArriveAtTarget( node, combinedPositions / ct );
+    }
+
+    return combinedPositions;
+}
+
+
+float3 SeparateFromNeighbours( Node node, uint3 id )
+{
+
+    float3 force = float3(0,0,0);
+    Node checkNode;
+    float dist = 0.3;
+    uint ct = 0;
+
+    // loop through buffer, skip own ID
+    [loop]
+    for( int i = 0;i < int(node.numberOfNodes); i++ )
+    {
+        if(i != id.x)
+        {
+            checkNode = dataBuffer[i];
+
+            //check distance
+            if(length(node.pos - checkNode.pos) < dist)
+            {
+
+                force += normalize( node.pos - checkNode.pos ) / dist;
+                ct++;
+
+            }
+        }
+    }
+
+    if(ct != 0)
+    {
+        force = normalize(force / ct) * node.maxSpeed;
+        if(length(force) > node.maxTurnSpeed)
+        {
+            force = normalize(force) * node.maxTurnSpeed;
+        }
+    }
+
+    return force;
+
+}
+
+float3 Flock( Node node, uint3 id )
+{
+
+    float3 flockForce = float3(0,0,0);
+
+    flockForce += SeparateFromNeighbours(node, id);
+    flockForce += AlignToNeighbours(node, id);
+    flockForce += CohereToNeighbours(node, id);
+
+    return flockForce;
+
+}
+
 [numthreads(96,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
 
+    // grab current node data from buffer
     Node node = dataBuffer[id.x];
 
+    // create a new accel vector
     float3 accel = float3(0.0,0.0,0.0);
 
+    // basic seek / avoid
+
+    /*
+    // if far enough away from the avoider, SeekTarget
     if (length(node.avoidPosition-node.pos) > 4)
     {
         accel += SeekTarget( node.pos, node.vel, node.targetPosition, node.maxSpeed, node.maxTurnSpeed );
     }
-    else
+    else // else AvoidTarget
     {
         accel += AvoidTarget( node.pos, node.vel, node.avoidPosition, node.maxSpeed, node.maxTurnSpeed );
     }
+    */
 
+    accel += SeekTarget( node.pos, node.vel, node.targetPosition, node.maxSpeed, node.maxTurnSpeed ) * 0.5;
+    if (length(node.avoidPosition-node.pos) < 4)
+    {
+        accel += AvoidTarget( node.pos, node.vel, node.avoidPosition, node.maxSpeed, node.maxTurnSpeed );
+    }
+    accel += Flock( node, id );
+
+    // add acceleration to velocity
     node.vel = node.vel + ( accel / node.mass);
 
+    // cap speed
     if(length(node.vel) > node.maxSpeed)
     {
         node.vel = normalize(node.vel) * node.maxSpeed;
     }
 
-
-    //update position and keep within bounds
-    //float3 newPos = node.pos + node.vel;
-
-    //node.pos = newPos;
-
+    // add velocity to position
     node.pos += node.vel;
 
+    // update buffer
     dataBuffer[id.x] = node;
-
-    //scaling
-    /*
-    //update sin value
-    float angle = dataBuffer[id.x].angle + dataBuffer[id.x].inc;
-    dataBuffer[id.x].angle = fmod(angle, 360);
-
-    //update scale value
-    float newScale = sin(radians(angle)) * 2;
-    dataBuffer[id.x].scale = clamp(newScale, 0.1, 2);
-    */
 
 }

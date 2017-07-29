@@ -136,19 +136,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 51afc0774c8b14c23a73ba4033cf23c8, type: 3}
-  count: 3813
-  maxSpeed: 0.9
-  maxTurnSpeed: 0.3
-  minBoidMass: 15
-  maxBoidMass: 21
+  count: 3000
+  maxSpeed: 1
+  maxTurnSpeed: 3
+  minBoidMass: 19
+  maxBoidMass: 24
   prefab: {fileID: 1763081833583180, guid: de5d4bc2bf47745ccada579ec3826f7f, type: 2}
   targetObject: {fileID: 809996460}
   avoiders:
   - {fileID: 1777137903}
-  avoiderLength: 5
+  avoiderLength: 7
   avoiderSpeeds: {x: 3, y: 0, z: 0}
-  axisSpread: {x: 4.77, y: 3, z: 0.94}
-  axisSpeeds: {x: 6, y: 3, z: 2.2}
+  axisSpread: {x: 7, y: 3, z: 7}
+  axisSpeeds: {x: 1, y: 0.7, z: 1.2}
 --- !u!4 &389395568
 Transform:
   m_ObjectHideFlags: 0
@@ -282,7 +282,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &592324688
 Transform:
   m_ObjectHideFlags: 0
@@ -502,7 +502,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1975062366
 Transform:
   m_ObjectHideFlags: 0
