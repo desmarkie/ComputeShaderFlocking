@@ -1,0 +1,57 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct CylinderPoint {
+
+    float3 pos;
+    float scale;
+    float obstacleCount;
+
+};
+
+struct Obstacle {
+
+    float3 pos;
+    float radius;
+
+};
+
+
+RWStructuredBuffer<CylinderPoint> pointsBuffer;
+RWStructuredBuffer<Obstacle> obstacleBuffer;
+
+float GetScale( CylinderPoint pt, Obstacle ob )
+{
+
+    float scale = 0;
+    float dist = length(ob.pos - pt.pos);
+
+    if(dist < ob.radius)
+    {
+
+        scale = 1 - ( dist / ob.radius );
+
+    }
+
+    return scale;
+
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    CylinderPoint pt = pointsBuffer[id.x];
+
+    float newScale = 0;
+    [loop]
+    for(int i = 0; i < int(pt.obstacleCount); i++)
+    {
+        newScale += GetScale(pt, obstacleBuffer[i]);
+    }
+
+    pt.scale = newScale / pt.obstacleCount;
+
+    pointsBuffer[id.x] = pt;
+
+}

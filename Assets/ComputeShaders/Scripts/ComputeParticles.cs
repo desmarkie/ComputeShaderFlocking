@@ -34,22 +34,23 @@ public class ComputeParticles : MonoBehaviour {
 	[Tooltip("Boid Avoid Obstacles")]
 	public SimpleTargetObject[] obstacles;
 
+	[Tooltip("Show / Hide Target Objects")]
+	public bool showTargets = false;
+
+	// obstacle objects stored as structs for compute shader buffer
 	private Obstacle[] obstacleStructs;
 
+	// Node structs
 	private Node[] nodes;
 
+	// Node geometries
 	private GameObject[] prefabGOs;
 
-	private Vector3 sinValues;
-
-	private string folder = "videocapture";
 
 
 	void Start () {
 
-		Time.captureFramerate = 60;
-		System.IO.Directory.CreateDirectory(folder);
-
+		// create Nodes and Node prefabs
 		nodes = new Node[count];
 		prefabGOs = new GameObject[count];
 
@@ -64,14 +65,28 @@ public class ComputeParticles : MonoBehaviour {
 
 		}
 
+
+		// create obstacle structs
 		obstacleStructs = new Obstacle[obstacles.Length];
 		for (int i = 0; i < obstacleStructs.Length; i++)
 		{
 			
 			obstacleStructs[i] = new Obstacle();
 			obstacleStructs[i].position = obstacles[i].currentPosition;
-			obstacleStructs[i].radius = obstacles[i].radius * 1.5f;
+			obstacleStructs[i].radius = obstacles[i].radius;
 
+		}
+
+	}
+
+	// switch target geometry on/off
+	public void ToggleTargetVisibility()
+	{
+		
+		targetObject.GetComponent<MeshRenderer>().enabled = showTargets;
+		for (int i = 0; i < obstacles.Length; i++)
+		{
+			obstacles[i].GetComponent<MeshRenderer>().enabled = showTargets;
 		}
 
 	}
@@ -79,84 +94,70 @@ public class ComputeParticles : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-		//sinValues.x += axisSpeeds.x;
-		//sinValues.x %= 360;
-		//sinValues.y += axisSpeeds.y;
-		//sinValues.y %= 360;
-		//sinValues.z += axisSpeeds.z;
-		//sinValues.z %= 360;
+		// check for target visibliity toggle
+		if (showTargets != targetObject.GetComponent<MeshRenderer>().enabled) ToggleTargetVisibility();
 
-		//targetObject.transform.localPosition = new Vector3(
-		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.x) * axisSpread.x,
-		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.y) * axisSpread.y,
-		//	Mathf.Sin(Mathf.Deg2Rad * sinValues.z) * axisSpread.z
-		//);
-
-		//avoiderValues.x += avoiderSpeeds.x;
-		//avoiderValues.x %= 360;
-		//avoiderValues.y += avoiderSpeeds.y;
-		//avoiderValues.y %= 360;
-		//avoiderValues.z += avoiderSpeeds.z;
-		//avoiderValues.z %= 360;
-
-		//avoiders[0].transform.localPosition = new Vector3(
-		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.x) * avoiderLength,
-		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.y) * avoiderLength,
-		//	Mathf.Sin(Mathf.Deg2Rad * avoiderValues.z) * avoiderLength
-		//);
-
-
+		// update obstacle struct data
 		for (int i = 0; i < obstacleStructs.Length; i++)
 		{
 			obstacleStructs[i].position = obstacles[i].currentPosition;
 		}
 
+		// create obstacle buffer for compute shader (float3 + float = 4. Multiply by 4 for total data per element)
 		ComputeBuffer obsBuffer = new ComputeBuffer(obstacleStructs.Length, 16);
+		// set buffer data
+		obsBuffer.SetData(obstacleStructs);
 
+		// update target position for each Node
 		for (int i = 0; i < nodes.Length; i++)
 		{
 			nodes[i].targetPosition = targetObject.transform.localPosition;
 		}
 
-		int kernelHandle = shader.FindKernel("CSMain");
-
-		ComputeBuffer buffer = new ComputeBuffer(count, 52);
-
+		// create buffer of Nodes
+		ComputeBuffer buffer = new ComputeBuffer(count, 64);
+		// set buffer data
 		buffer.SetData(nodes);
 
+		// storing the new data in here
 		Node[] newPositions = new Node[count];
 
+		// grab a reference to the computer shader method
+		int kernelHandle = shader.FindKernel("CSMain");
+		// set our buffers
 		shader.SetBuffer(kernelHandle, "dataBuffer", buffer);
 		shader.SetBuffer(kernelHandle, "obstacleBuffer", obsBuffer);
+		// run it
 		shader.Dispatch(kernelHandle, count, 1, 1);
+		// get the data back
 		buffer.GetData(newPositions);
+		// clear the buffers
 		buffer.Release();
+		obsBuffer.Release();
 
+		// update local data
 		nodes = newPositions;
 
+		// update node positions + velocities
 		for (int i = 0; i < nodes.Length; i++)
 		{
 			prefabGOs[i].transform.localPosition = nodes[i].position;
-			//prefabGOs[i].transform.localScale = Vector3.one * nodes[i].scale;
 			if(nodes[i].velocity != Vector3.zero) prefabGOs[i].transform.rotation = Quaternion.LookRotation(nodes[i].velocity);
 		}
 
-		// name is "realFolder/shot 0005.png"
-		string filename = string.Format("{0}/{1:D04} shot.png", folder, Time.frameCount);
-
-		// Capture the screenshot to the specified file.
-		//ScreenCapture.CaptureScreenshot(filename);
 	}
 
+	// instantiate a new prefab and return it
 	private GameObject GetNewPrefab()
 	{
 
-		GameObject cube = Instantiate(prefab);
-		cube.transform.parent = transform;
-		return cube;
+		GameObject go = Instantiate(prefab);
+		go.transform.parent = transform;
+		return go;
 
 	}
 
+	// create a new Node object and return it
 	private Node GetNewNode()
 	{
 
@@ -168,28 +169,9 @@ public class ComputeParticles : MonoBehaviour {
 		n.targetPosition = targetObject.transform.localPosition;
 		n.mass = Random.Range(minBoidMass, maxBoidMass);
 		n.numberOfNodes = count;
+		n.obsCount = obstacles.Length;
 		return n;
 
 	}
-
-}
-
-
-struct Node {
-	
-	public Vector3 position;
-	public Vector3 velocity;
-	public Vector3 targetPosition;
-	public float mass;
-	public float maxSpeed;
-	public float maxTurnSpeed;
-	public float numberOfNodes;
-
-}
-
-struct Obstacle {
-
-	public Vector3 position;
-	public float radius;
 
 }

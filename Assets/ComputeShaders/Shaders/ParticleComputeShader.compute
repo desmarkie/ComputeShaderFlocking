@@ -10,7 +10,7 @@ struct Node {
     float maxSpeed;
     float maxTurnSpeed;
     float numberOfNodes;
-
+    float obsCount;
 };
 
 struct Obstacle {
@@ -51,10 +51,12 @@ float3 AvoidTarget ( Node node, float3 targetPosition )
     desiredVelocity = normalize(desiredVelocity) * node.maxSpeed;
 
     float3 turningForce = desiredVelocity - node.vel;
+
     if(length(turningForce) > node.maxTurnSpeed)
     {
         turningForce = normalize(turningForce) * node.maxTurnSpeed;
     }
+
 
 
     return turningForce;
@@ -107,7 +109,7 @@ float3 AlignToNeighbours ( Node node, uint3 id )
     [loop]
     for ( int i = 0; i < int(node.numberOfNodes); i++ )
     {
-        if(i != id.x)
+        if(i != int(id.x))
         {
             checkNode = dataBuffer[i];
             if(length(node.pos - checkNode.pos) < dist)
@@ -146,7 +148,7 @@ float3 CohereToNeighbours ( Node node, uint3 id )
     [loop]
     for ( int i = 0; i < int(node.numberOfNodes); i++ )
     {
-        if(i != id.x)
+        if(i != int(id.x))
         {
             checkNode = dataBuffer[i];
             if(length(node.pos - checkNode.pos) < dist)
@@ -179,7 +181,7 @@ float3 SeparateFromNeighbours( Node node, uint3 id )
     [loop]
     for( int i = 0;i < int(node.numberOfNodes); i++ )
     {
-        if(i != id.x)
+        if(i != int(id.x))
         {
             checkNode = dataBuffer[i];
 
@@ -233,29 +235,31 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // seek target first
     accel += SeekTarget( node, node.targetPosition );
 
-    // avoid any obstacles
-    uint obsCount, obsStride;
-    obstacleBuffer.GetDimensions(obsCount, obsStride);
-    if(obsCount > 0)
-    {
-        [loop]
-        for(int i = 0; i < obsCount; i++)
-        {
-            accel += DistAvoidTarget(node, obstacleBuffer[i].pos, obstacleBuffer[i].radius);
-        }
-    }
-
     // add flocking behaviours
     accel += Flock( node, id );
 
+
     // add acceleration to velocity
     node.vel = node.vel + ( accel / node.mass);
+
+    // avoid any obstacles
+    if(node.obsCount > 0)
+    {
+        [loop]
+        for(int i = 0; i < int(node.obsCount); i++)
+        {
+            //accel += DistAvoidTarget(node, obstacleBuffer[i].pos, obstacleBuffer[i].radius);
+            node.vel += DistAvoidTarget(node, obstacleBuffer[i].pos, obstacleBuffer[i].radius);
+        }
+    }
 
     // cap speed
     if(length(node.vel) > node.maxSpeed)
     {
         node.vel = normalize(node.vel) * node.maxSpeed;
     }
+
+
 
     // add velocity to position
     node.pos += node.vel;
