@@ -1,7 +1,7 @@
 Just mucking about trying to figure out compute shaders.
 
 Playlist with screengrabs of varying quality here:  
-https://www.youtube.com/playlist?list=PLqszSxUmxmKSgi4SwSYFPsZODwNDky56W
+[![Youtube Preview Image](https://img.youtube.com/vi/8OgshaNikIk/0.jpg)](https://www.youtube.com/playlist?list=PLqszSxUmxmKSgi4SwSYFPsZODwNDky56W)
 
 links  
 http://kylehalladay.com/blog/tutorial/2014/06/27/Compute-Shaders-Are-Nifty.html
