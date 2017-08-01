@@ -6,5 +6,5 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/ComputeShaders/Scenes/ComputeParticles.unity
-    guid: 7c0e49caf8e3b4838ae528efcdae1839
+    path: Assets/ComputeShaders/Scenes/ComputeDrawMeshInstancedDirect.unity
+    guid: 5767c9387be34450485c8b5d259b27fe
