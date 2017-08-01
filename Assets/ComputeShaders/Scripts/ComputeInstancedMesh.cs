@@ -35,12 +35,10 @@ public class ComputeInstancedMesh : MonoBehaviour {
 
 		colors = GetComponent<ColorCollection>();
 
-
-
 		argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
 
-
 		UpdateBuffers();
+
 	}
 
 	private Node GetNode()
@@ -76,13 +74,13 @@ public class ComputeInstancedMesh : MonoBehaviour {
 
 		nodes = new Node[boidCount];
 		nodeColours = new Color[boidCount];
-		positions = new Vector4[boidCount * historyLength];
+		positions = new Vector4[boidCount * 100];
 
 		for (int i = 0; i < nodes.Length; i++)
 		{
 			nodes[i] = GetNode();
 			nodeColours[i] = colors.GetRandomColor();
-			positions[i] = nodes[i].position;
+			positions[i * historyLength] = nodes[i].position;
 		}
 
 
@@ -91,7 +89,7 @@ public class ComputeInstancedMesh : MonoBehaviour {
 		// reset positions data
 		int kernel = shader.FindKernel("InitPositions");
 
-		shader.SetInt("historyLength", historyLength);
+		//shader.SetInt("historyLength", historyLength);
 		positionBuffer.SetData(positions);
 
 		shader.Dispatch(kernel, boidCount, 1, 1);
@@ -120,7 +118,11 @@ public class ComputeInstancedMesh : MonoBehaviour {
 			nodes[i].targetPosition = targetObject.position;
 		}
 		boidBuffer.SetData(nodes);
+		positionBuffer.SetData(positions);
 
+		Debug.Log("a:" + positions[0]);
+		Debug.Log("b:" + positions[1]);
+		Debug.Log("c:" + positions[2]);
 
 		RunShader();
 

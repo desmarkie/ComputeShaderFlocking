@@ -137,10 +137,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 526307621a87045478f29d564b843ec4, type: 3}
-  boidCount: 6000
-  historyLength: 1
+  boidCount: 1
+  historyLength: 100
   targetObject: {fileID: 1370429904}
-  instanceMesh: {fileID: 4300000, guid: 199fa5c60c2c94d9e9fb46bbdf491eb4, type: 3}
+  instanceMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   instanceMaterial: {fileID: 2100000, guid: f83193609cf1b441f8fbde6ed6e58841, type: 2}
 --- !u!4 &55228315
 Transform:
@@ -296,7 +296,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 882fd658ef42b4b6eb2b0cf9502db6a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  axisMagnitude: {x: 10, y: 5, z: 10}
+  axisMagnitude: {x: 10, y: 5, z: 15}
   axisWavelength: {x: 3, y: 5, z: 3}
   _parentTarget: {fileID: 0}
 --- !u!23 &1370429901
@@ -305,7 +305,7 @@ MeshRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1370429899}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_MotionVectors: 1
