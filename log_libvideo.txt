@@ -1,7 +1,0 @@
-[LOG]: LibVideoCaptureAPI() - Frame width: 1280
-[LOG]: LibVideoCaptureAPI() - Frame height: 720
-[LOG]: LibVideoCaptureAPI() - Frame rate: 30
-[LOG]: LibVideoCaptureAPI() - Projection: 0
-[LOG]: LibVideoCaptureAPI() - File path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/Video/2017-07-28-23-09-11-NAFAF.mp4
-[LOG]: LibVideoCaptureAPI() - FFmpeg path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/FFmpeg/OSX/ffmpeg
-[LOG]: Close() - Success: Ture
