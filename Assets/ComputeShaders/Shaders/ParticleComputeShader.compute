@@ -78,7 +78,7 @@ float3 DistAvoidTarget( Node node, float3 targetPosition, float radius )
 float3 ArriveAtTarget ( Node node, float3 targetPosition )
 {
     float3 desiredVelocity = targetPosition - node.pos;
-    float dist = 0.3;
+    float dist = 1;
 
     if ( length(desiredVelocity) < dist )
     {
@@ -104,7 +104,7 @@ float3 AlignToNeighbours ( Node node, uint3 id )
     float3 combinedVelocities = float3(0,0,0);
     Node checkNode;
     int ct = 0;
-    float dist = 0.6;
+    float dist = 1.5;
 
     [loop]
     for ( int i = 0; i < int(node.numberOfNodes); i++ )
@@ -143,7 +143,7 @@ float3 CohereToNeighbours ( Node node, uint3 id )
     float3 combinedPositions = float3(0,0,0);
     Node checkNode;
     int ct = 0;
-    float dist = 0.3;
+    float dist = 1.0;
 
     [loop]
     for ( int i = 0; i < int(node.numberOfNodes); i++ )
@@ -174,7 +174,7 @@ float3 SeparateFromNeighbours( Node node, uint3 id )
 
     float3 force = float3(0,0,0);
     Node checkNode;
-    float dist = 0.3;
+    float dist = 1.0;
     uint ct = 0;
 
     // loop through buffer, skip own ID

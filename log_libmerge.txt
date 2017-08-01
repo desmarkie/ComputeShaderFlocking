@@ -1,5 +1,0 @@
-[LOG]: LibVideoMergeAPI() - Frame rate: 5000
-[LOG]: LibVideoMergeAPI() - File path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/Video/2017-07-28-23-09-26-JGO8O.mp4
-[LOG]: LibVideoMergeAPI() - Video file path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/Video/2017-07-28-23-09-11-NAFAF.mp4
-[LOG]: LibVideoMergeAPI() - Audio file path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/Video/2017-07-28-23-09-11-7RVAK.wav
-[LOG]: LibVideoMergeAPI() - FFmpeg path: /Users/desmarkie/COR/Internal/unity/cs101/Assets/StreamingAssets/RockVR/FFmpeg/OSX/ffmpeg
