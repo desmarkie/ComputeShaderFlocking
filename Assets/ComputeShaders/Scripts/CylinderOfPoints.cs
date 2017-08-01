@@ -105,8 +105,8 @@ public class CylinderOfPoints : MonoBehaviour
 			{
 
 				prefabs[pt].transform.localScale = Vector3.one * Mathf.Lerp(farScale, maxScale, Mathf.InverseLerp(0, 1, cylinderPoints[pt].scale));
-				Vector3 scaledPos = cylinderPoints[pt].position * prefabs[pt].transform.localScale.x * 2;
-				//scaledPos.y = cylinderPoints[pt].position.y;
+				Vector3 scaledPos = cylinderPoints[pt].position * cylinderPoints[pt].scale;
+				scaledPos.y = cylinderPoints[pt].position.y;
 				prefabs[pt].transform.localPosition = scaledPos;
 				pt++;
 

@@ -50,7 +50,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         newScale += GetScale(pt, obstacleBuffer[i]);
     }
 
-    pt.scale = newScale / pt.obstacleCount;
+    float scaleDif = (newScale/pt.obstacleCount) - pt.scale;
+
+    pt.scale += scaleDif / 10;
 
     pointsBuffer[id.x] = pt;
 

@@ -1,0 +1,38 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct Blade {
+
+    float3 pos;
+    float3 offset;
+    float height;
+    float increment;
+    float sinValue;
+
+};
+
+RWStructuredBuffer<Blade> _bladeBuffer;
+
+
+[numthreads(32,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    Blade blade = _bladeBuffer[id.x];
+
+    blade.sinValue += blade.increment;
+
+    if(blade.sinValue > 360)
+    {
+        blade.sinValue -= 360;
+    }
+
+    blade.offset = float3(
+        cos(radians(blade.sinValue)),
+        blade.height,
+        sin(radians(blade.sinValue))
+    );
+
+    _bladeBuffer[id.x] = blade;
+
+}

@@ -1,0 +1,108 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#pragma kernel InitPositions
+
+struct Node {
+
+    float3 position;
+    float3 velocity;
+    float3 targetPosition;
+    float mass;
+    float maxSpeed;
+    float maxTurnSpeed;
+    float numberOfNodes;
+    float obsCount;
+
+};
+
+struct Position {
+
+    float3 position;
+
+};
+
+
+RWStructuredBuffer<Node> boidBuffer;
+RWStructuredBuffer<float4> positionBuffer;
+
+int historyLength = 1;
+
+
+float3 ClampMagnitude(float3 vec, float limit)
+{
+    float3 result = vec;
+
+    if(length(result) > limit)
+    {
+        result = normalize(result) * limit;
+    }
+
+    return result;
+}
+
+float3 Seek(Node node, float3 target)
+{
+    float3 desiredVelocity = target - node.position;
+    desiredVelocity = normalize(desiredVelocity) * node.maxSpeed;
+
+    float3 turningForce = node.velocity - desiredVelocity;
+    turningForce = ClampMagnitude(turningForce, node.maxTurnSpeed);
+
+    return turningForce;
+}
+
+void AddPosition(int id, float3 position)
+{
+
+    int startPos = id;
+    int endPos = id + (historyLength - 1);
+
+    [loop]
+    for(int i = endPos; i >= startPos; i--)
+    {
+        if(i > startPos)
+        {
+            positionBuffer[i + 1] = positionBuffer[i];
+        }
+        else
+        {
+            positionBuffer[i] = float4(position, 0);
+        }
+
+    }
+
+}
+
+[numthreads(64,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    Node node = boidBuffer[id.x];
+
+    float3 accel = Seek(node, node.targetPosition);
+
+    node.velocity -= ClampMagnitude(accel / node.mass, node.maxSpeed);
+    node.velocity = ClampMagnitude(node.velocity, node.maxSpeed);
+
+    node.position += node.velocity;
+
+    AddPosition(int(id.x), node.position);
+
+    //positionBuffer[int(id.x) * historyLength] = float4(node.position,0);
+
+    boidBuffer[id.x] = node;
+
+}
+
+[numthreads(64,1,1)]
+void InitPositions (uint id : SV_DispatchThreadID)
+{
+
+    [loop]
+    for(int i = 0; i < historyLength; i++)
+    {
+        positionBuffer[id + i] = float4(boidBuffer[id].position, 0);
+    }
+
+    
+}
