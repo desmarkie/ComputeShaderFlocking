@@ -24,8 +24,12 @@
 			float2 uv_MainTex;
 		};
 
+        struct Position {
+            float4 position;
+        };
+
     #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-        StructuredBuffer<float4> positionBuffer;
+        StructuredBuffer<Position> positionBuffer;
     #endif
 
 		half _Glossiness;
@@ -40,14 +44,12 @@
         void setup()
         {
         #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-            float4 data = positionBuffer[unity_InstanceID];
+            float4 data = positionBuffer[unity_InstanceID].position;
 
-            //float rotation = data.w * data.w * _Time.y * 0.5f;
-            //rotate2D(data.xz, rotation);
 
-            //unity_ObjectToWorld._11_21_31_41 = float4(data.w, 0, 0, 0);
-            //unity_ObjectToWorld._12_22_32_42 = float4(0, data.w, 0, 0);
-            //unity_ObjectToWorld._13_23_33_43 = float4(0, 0, data.w, 0);
+            unity_ObjectToWorld._11_21_31_41 = float4(data.w, 0, 0, 0);
+            unity_ObjectToWorld._12_22_32_42 = float4(0, data.w, 0, 0);
+            unity_ObjectToWorld._13_23_33_43 = float4(0, 0, data.w, 0);
             unity_ObjectToWorld._14_24_34_44 = float4(data.xyz, 1);
             unity_WorldToObject = unity_ObjectToWorld;
             unity_WorldToObject._14_24_34 *= -1;

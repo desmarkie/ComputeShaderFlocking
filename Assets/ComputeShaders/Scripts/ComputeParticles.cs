@@ -152,7 +152,9 @@ public class ComputeParticles : MonoBehaviour {
 	{
 
 		GameObject go = Instantiate(prefab);
+
 		go.transform.parent = transform;
+
 		return go;
 
 	}
@@ -162,6 +164,7 @@ public class ComputeParticles : MonoBehaviour {
 	{
 
 		Node n = new Node();
+
 		n.position = new Vector3( Random.Range(-10f, 10f), Random.Range(-10f, 10f), Random.Range(-10f, 10f) );
 		n.velocity = Vector3.zero;
 		n.maxSpeed = maxSpeed;
@@ -170,6 +173,7 @@ public class ComputeParticles : MonoBehaviour {
 		n.mass = Random.Range(minBoidMass, maxBoidMass);
 		n.numberOfNodes = count;
 		n.obsCount = obstacles.Length;
+
 		return n;
 
 	}

@@ -1,6 +1,11 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
-#pragma kernel InitPositions
+
+#include "UnityCG.cginc"
+
+CBUFFER_START(Params)
+    int historyLength = 3;
+CBUFFER_END
 
 struct Node {
 
@@ -15,17 +20,8 @@ struct Node {
 
 };
 
-struct Position {
-
-    float3 position;
-
-};
-
 
 RWStructuredBuffer<Node> boidBuffer;
-RWStructuredBuffer<float4> positionBuffer;
-
-int historyLength = 3;
 
 
 float3 ClampMagnitude(float3 vec, float limit)
@@ -51,27 +47,6 @@ float3 Seek(Node node, float3 target)
     return turningForce;
 }
 
-void AddPosition(int id, float3 position)
-{
-
-    int startPos = id;
-    int endPos = id + (10 - 1);
-
-    [loop]
-    for(int i = endPos-2; i >= startPos; i--)
-    {
-        if(i > startPos)
-        {
-            positionBuffer[i + 1] = positionBuffer[i];
-        }
-        else
-        {
-            positionBuffer[i] = float4(position, 0);
-        }
-
-    }
-
-}
 
 [numthreads(64,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -86,25 +61,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     node.position += node.velocity;
 
-    AddPosition(int(id.x), node.position);
-
-    //positionBuffer[int(id.x) * historyLength] = float4(node.position,0);
-
     boidBuffer[id.x] = node;
 
-}
-
-[numthreads(64,1,1)]
-void InitPositions (uint id : SV_DispatchThreadID)
-{
-
-    [loop]
-    for(int i = 0; i < 10; i++)
-    {
-
-        positionBuffer[id + i] = float4(boidBuffer[id].position, 0);
-
-    }
-
-    
 }
